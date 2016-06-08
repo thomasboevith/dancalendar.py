@@ -55,7 +55,7 @@ if __name__ == '__main__':
     log.debug('docopt args=%s' % str(args).replace('\n', ''))
 
     if args['--year'] is None:
-        year = datetime.datetime.now().year
+        year = datetime.now().year
     else:
         year = int(args['--year'])
 
