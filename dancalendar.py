@@ -43,6 +43,7 @@ WARRANTY, to the extent permitted by law.
 
 
 def utc2localtime(utc_datetime, timezone='Europe/Copenhagen'):
+    """Convert UTC datetime to local timezone datetime"""
     tz = pytz.timezone(timezone)
     utc_dt = datetime(utc_datetime.year, utc_datetime.month,
                       utc_datetime.day, utc_datetime.hour,
@@ -53,10 +54,12 @@ def utc2localtime(utc_datetime, timezone='Europe/Copenhagen'):
 
 
 def bright_night(ephemdate, city='Copenhagen'):
+    """Determine if the upcoming night a bright night"""
     cph = ephem.city(city)
     cph.horizon = '-18'  # Astronomical twillight
     cph.date = ephemdate
     try:
+        # Twillight defined by center of the sun
         cph.next_setting(ephem.Sun(), use_center=True)
         return False
     except:
@@ -64,13 +67,13 @@ def bright_night(ephemdate, city='Copenhagen'):
 
 
 def bright_nights(year, city='Copenhagen'):
+    """Find beginning and end of bright nights"""
     start = ephem.Date((year, 1, 1, 0))
     brightnights_period = []
     brightnights = False
     for i in range(366):
         d = ephem.date(start + (24*ephem.hour*i))
         b = bright_night(d, city=city)
-
         if (b is True) and (brightnights is False):
             brightnights = True
             brightnights_period.append(d.datetime())
@@ -82,6 +85,7 @@ def bright_nights(year, city='Copenhagen'):
 
 
 class MoonPhases:
+    """Moon phase date times"""
     def moon_phase_names(self, moon_phase, nametype=None):
         if nametype == 'danish':
             danish_names = {'new_moon': 'Nymåne',
@@ -100,6 +104,7 @@ class MoonPhases:
 
     def __init__(self, year, timezone='Europe/Copenhagen',
                  nametype='danish'):
+        """Compute moon phases for a whole year"""
         # Backtrack and look ahead to be sure to catch moons around newyear
         start_date = ephem.Date((year-1, 9, 1))
         end_date = ephem.Date((year+1, 3, 1))
@@ -136,11 +141,13 @@ class MoonPhases:
 
 
 class SunRiseSunSet:
+    """Sun rise and sun set datetimes"""
     def __init__(self, year, observer):
         pass
 
 
 class ExtendedDenmark(holidays.Denmark):
+    """Extends the official public holidays of Denmark"""
     def _populate(self, year):
         # Populate the holiday list with the default DK holidays
         holidays.Denmark._populate(self, year)
