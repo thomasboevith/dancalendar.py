@@ -19,13 +19,15 @@ __doc__ = """
 dancalendar.py {version} --- generate comprehensive calendars for Denmark
 
 Usage:
-  {filename} [-y <year>] [--moons] [--times] [-v ...]
+  {filename} [-y <year>] [--moons] [--sun] [--week] [--times] [-v ...]
   {filename} (-h | --help)
   {filename} --version
 
 Options:
   -y, --year <year>       Calendar year. (default: current year).
   -m, --moons             Include moon phases. [Default: False].
+  -s, --sun               Include sun rise and sun set. [Default: False].
+  -w, --week              Inlcude week numbers on Mondays. [Default: False].
   -t, --times             Include times of events. [Default: False].
   -h, --help              Show this screen.
   --version               Show version.
@@ -43,7 +45,8 @@ WARRANTY, to the extent permitted by law.
 """.format(filename=os.path.basename(__file__), version=version)
 
 
-def utc2localtime(utc_datetime, timezone='Europe/Copenhagen'):
+def utc2localtime(utc_datetime, timezone='Europe/Copenhagen',
+                  format='datetime'):
     """Convert UTC datetime to local timezone datetime"""
     tz = pytz.timezone(timezone)
     utc_dt = datetime(utc_datetime.year, utc_datetime.month,
@@ -51,13 +54,12 @@ def utc2localtime(utc_datetime, timezone='Europe/Copenhagen'):
                       utc_datetime.minute, utc_datetime.second,
                       utc_datetime.microsecond,
                       tzinfo=pytz.utc)
-    return(utc_dt.astimezone(tz))
+    if format == 'datetime':
+        return(utc_dt.astimezone(tz))
+    elif format == 'hhmm':
+        return('%02i:%02i' % (utc_dt.astimezone(tz).hour,
+                              utc_dt.astimezone(tz).minute))
 
-
-def utc2hhmm(utc_datetime, timezone='Europe/Copenhagen'):
-    """Print local hour and minute of UTC datetime"""
-    return '%02i:%02i' % (utc2localtime(utc_datetime).hour,
-                          utc2localtime(utc_datetime).minute)
 
 def bright_night(ephemdate, city='Copenhagen'):
     """Determine if the upcoming night a bright night"""
@@ -126,30 +128,51 @@ class MoonPhases:
             local_last_quarter = utc2localtime(last_quarter.datetime())
             if local_new_moon.year == year:
                 self.moon_phases[local_new_moon] = \
-                    self.moon_phase_names('new_moon', nametype)
+                                    self.moon_phase_names('new_moon', nametype)
             if local_first_quarter.year == year:
                 self.moon_phases[local_first_quarter] = \
-                    self.moon_phase_names('first_quarter', nametype)
+                               self.moon_phase_names('first_quarter', nametype)
             if local_full_moon.year == year:
                 self.moon_phases[local_full_moon] = \
-                    self.moon_phase_names('full_moon', nametype)
+                                   self.moon_phase_names('full_moon', nametype)
             if local_last_quarter.year == year:
                 self.moon_phases[local_last_quarter] = \
-                    self.moon_phase_names('last_quarter', nametype)
+                                self.moon_phase_names('last_quarter', nametype)
 
             new_moon = ephem.next_new_moon(new_moon)
             first_quarter = ephem.next_first_quarter_moon(first_quarter)
             full_moon = ephem.next_full_moon(full_moon)
             last_quarter = ephem.next_last_quarter_moon(last_quarter)
             if (new_moon > end_date) and (first_quarter > end_date) and \
-                    (full_moon > end_date) and (last_quarter > end_date):
+               (full_moon > end_date) and (last_quarter > end_date):
                 break
 
 
 class SunRiseSunSet:
-    """Sun rise and sun set datetimes"""
+    """Sun rise and sun set datetimes for every week"""
     def __init__(self, year, observer):
-        pass
+        self.sun_rise_sun_set = {}
+        start = ephem.Date((year, 1, 1, 0))
+        for i in range(367):
+            d = ephem.date(start + (24*ephem.hour*i))
+            if d.datetime().weekday() == 0:  # If monday
+                observer.date = d
+                sunrise = observer.next_rising(ephem.Sun())
+                sunset = observer.next_setting(ephem.Sun())
+                weeknumber = d.datetime().strftime("%U")
+                if d.datetime().year == year:
+                    if args['--week'] and args['--sun']:
+                        self.sun_rise_sun_set[d.datetime()] \
+                            = 'Uge %s, sol %s-%s' % (weeknumber,
+                              utc2localtime(sunrise.datetime(), format='hhmm'),
+                               utc2localtime(sunset.datetime(), format='hhmm'))
+                    elif args['--week'] and not args['--sun']:
+                        self.sun_rise_sun_set[d.datetime()] = 'Uge %s' \
+                                                              % (weeknumber)
+                    elif not args['--week'] and args['--sun']:
+                        self.sun_rise_sun_set[d.datetime()] = 'Sol %s-%s' \
+                            % (utc2localtime(sunrise.datetime(), format='hhmm'),
+                               utc2localtime(sunset.datetime(), format='hhmm'))
 
 
 class ExtendedDenmark(holidays.Denmark):
@@ -157,6 +180,13 @@ class ExtendedDenmark(holidays.Denmark):
     def _populate(self, year):
         # Populate the holiday list with the default DK holidays
         holidays.Denmark._populate(self, year)
+
+        if args['--sun'] or args['--week']:
+            # Sun rise and sunsets
+            cph = ephem.city('Copenhagen')
+            sun_rise_sun_set = SunRiseSunSet(year, cph)
+            for key in sorted(sun_rise_sun_set.sun_rise_sun_set):
+                self[key] = sun_rise_sun_set.sun_rise_sun_set[key]
 
         if args['--moons']:
             # Moon phases
@@ -176,13 +206,17 @@ class ExtendedDenmark(holidays.Denmark):
 
         if args['--times']:
             self[utc2localtime(spring_equinox.datetime())] \
-                = 'Forårsjævndøgn %s' % utc2hhmm(spring_equinox.datetime())
+                = 'Forårsjævndøgn %s' % utc2localtime(spring_equinox.datetime(),
+                                                      format='hhmm')
             self[utc2localtime(summer_solstice.datetime())] \
-                = 'Sommersolhverv %s' % utc2hhmm(summer_solstice.datetime())
+               = 'Sommersolhverv %s' % utc2localtime(summer_solstice.datetime(),
+                                                      format='hhmm')
             self[utc2localtime(fall_equinox.datetime())] \
-                = 'Efterårsjævndøgn %s' % utc2hhmm(fall_equinox.datetime())
+                = 'Efterårsjævndøgn %s' % utc2localtime(fall_equinox.datetime(),
+                                                        format='hhmm')
             self[utc2localtime(winter_solstice.datetime())] \
-                = 'Vintersolhverv %s' % utc2hhmm(winter_solstice.datetime())
+               = 'Vintersolhverv %s' % utc2localtime(winter_solstice.datetime(),
+                                                      format='hhmm')
         else:
             self[utc2localtime(spring_equinox.datetime())] = 'Forårsjævndøgn'
             self[utc2localtime(summer_solstice.datetime())] = 'Sommersolhverv'
