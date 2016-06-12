@@ -19,13 +19,14 @@ __doc__ = """
 dancalendar.py {version} --- generate comprehensive calendars for Denmark
 
 Usage:
-  {filename} [-y <year>] [--moons] [-v ...]
+  {filename} [-y <year>] [--moons] [--times] [-v ...]
   {filename} (-h | --help)
   {filename} --version
 
 Options:
   -y, --year <year>       Calendar year. (default: current year).
   -m, --moons             Include moon phases. [Default: False].
+  -t, --times             Include times of events. [Default: False].
   -h, --help              Show this screen.
   --version               Show version.
   -v                      Print info (-vv for debug info (debug)).
@@ -52,6 +53,11 @@ def utc2localtime(utc_datetime, timezone='Europe/Copenhagen'):
                       tzinfo=pytz.utc)
     return(utc_dt.astimezone(tz))
 
+
+def utc2hhmm(utc_datetime, timezone='Europe/Copenhagen'):
+    """Print local hour and minute of UTC datetime"""
+    return '%02i:%02i' % (utc2localtime(utc_datetime).hour,
+                          utc2localtime(utc_datetime).minute)
 
 def bright_night(ephemdate, city='Copenhagen'):
     """Determine if the upcoming night a bright night"""
@@ -168,10 +174,20 @@ class ExtendedDenmark(holidays.Denmark):
         self[brightnights[0]] = 'Lyse nætter begynder'
         self[brightnights[1]] = 'Lyse nætter slutter'
 
-        self[utc2localtime(spring_equinox.datetime())] = 'Forårsjævndøgn'
-        self[utc2localtime(summer_solstice.datetime())] = 'Sommersolhverv'
-        self[utc2localtime(fall_equinox.datetime())] = 'Efterårsjævndøgn'
-        self[utc2localtime(winter_solstice.datetime())] = 'Vintersolhverv'
+        if args['--times']:
+            self[utc2localtime(spring_equinox.datetime())] \
+                = 'Forårsjævndøgn %s' % utc2hhmm(spring_equinox.datetime())
+            self[utc2localtime(summer_solstice.datetime())] \
+                = 'Sommersolhverv %s' % utc2hhmm(summer_solstice.datetime())
+            self[utc2localtime(fall_equinox.datetime())] \
+                = 'Efterårsjævndøgn %s' % utc2hhmm(fall_equinox.datetime())
+            self[utc2localtime(winter_solstice.datetime())] \
+                = 'Vintersolhverv %s' % utc2hhmm(winter_solstice.datetime())
+        else:
+            self[utc2localtime(spring_equinox.datetime())] = 'Forårsjævndøgn'
+            self[utc2localtime(summer_solstice.datetime())] = 'Sommersolhverv'
+            self[utc2localtime(fall_equinox.datetime())] = 'Efterårsjævndøgn'
+            self[utc2localtime(winter_solstice.datetime())] = 'Vintersolhverv'
 
         # Add other Danish holidays and events
         self[date(year, 1, 6)] = 'Helligtrekonger'
