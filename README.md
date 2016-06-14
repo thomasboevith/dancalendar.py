@@ -6,13 +6,16 @@ Included are precisely computed astronomical events.
     dancalendar.py 0.1 --- generate comprehensive calendars for Denmark
 
     Usage:
-      dancalendar.py [-y <year>] [--moons] [-v ...]
+      dancalendar.py [-y <year>] [--moons] [--sun] [--week] [--times] [-v ...]
       dancalendar.py (-h | --help)
       dancalendar.py --version
 
     Options:
       -y, --year <year>       Calendar year. (default: current year).
       -m, --moons             Include moon phases. [Default: False].
+      -s, --sun               Include sun rise and sun set. [Default: False].
+      -w, --week              Inlcude week numbers on Mondays. [Default: False].
+      -t, --times             Include times of events. [Default: False].
       -h, --help              Show this screen.
       --version               Show version.
       -v                      Print info (-vv for debug info (debug)).
