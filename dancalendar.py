@@ -19,16 +19,16 @@ __doc__ = """
 dancalendar.py {version} --- generate comprehensive calendars for Denmark
 
 Usage:
-  {filename} [-y <year>] [--moons] [--sun] [--week] [--times] [-v ...]
+  {filename} [-y <year>] [--moon] [--sun] [--week] [--time] [-v ...]
   {filename} (-h | --help)
   {filename} --version
 
 Options:
   -y, --year <year>       Calendar year. (default: current year).
-  -m, --moons             Include moon phases. [Default: False].
+  -m, --moon              Include moon phases. [Default: False].
   -s, --sun               Include sun rise and sun set. [Default: False].
   -w, --week              Inlcude week numbers on Mondays. [Default: False].
-  -t, --times             Include times of events. [Default: False].
+  -t, --time              Include time of events. [Default: False].
   -h, --help              Show this screen.
   --version               Show version.
   -v                      Print info (-vv for debug info (debug)).
