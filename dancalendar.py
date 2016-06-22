@@ -188,7 +188,7 @@ class ExtendedDenmark(holidays.Denmark):
             for key in sorted(sun_rise_sun_set.sun_rise_sun_set):
                 self[key] = sun_rise_sun_set.sun_rise_sun_set[key]
 
-        if args['--moons']:
+        if args['--moon']:
             # Moon phases
             moon_phases = MoonPhases(year, nametype='unicode')
             for key in sorted(moon_phases.moon_phases):
@@ -204,7 +204,7 @@ class ExtendedDenmark(holidays.Denmark):
         self[brightnights[0]] = 'Lyse nætter begynder'
         self[brightnights[1]] = 'Lyse nætter slutter'
 
-        if args['--times']:
+        if args['--time']:
             self[utc2localtime(spring_equinox.datetime())] \
                 = 'Forårsjævndøgn %s' % utc2localtime(spring_equinox.datetime(),
                                                       format='hhmm')
