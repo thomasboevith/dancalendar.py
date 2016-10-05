@@ -19,7 +19,7 @@ __doc__ = """
 dancalendar.py {version} --- generate comprehensive calendars for Denmark
 
 Usage:
-  {filename} [-y <year>] [--moon] [--sun] [--week] [--time] [-v ...]
+  {filename} [-y <year>] [--moon] [--sun] [--week] [--time] [--all] [-v ...]
   {filename} (-h | --help)
   {filename} --version
 
@@ -29,6 +29,7 @@ Options:
   -s, --sun               Include sun rise and sun set. [Default: False].
   -w, --week              Inlcude week numbers on Mondays. [Default: False].
   -t, --time              Include time of events. [Default: False].
+  -a, --all               Include all extra information. [Default: False].
   -h, --help              Show this screen.
   --version               Show version.
   -v                      Print info (-vv for debug info (debug)).
@@ -268,6 +269,9 @@ if __name__ == '__main__':
         year = datetime.now().year
     else:
         year = int(args['--year'])
+
+    if args['--all']:
+        args['--moon'] = args['--sun'] = args['--week'] = args['--time'] = True
 
     if (year < 1) or (year > 9999):
         message = 'Specify specify year between year 1 and 9999'
