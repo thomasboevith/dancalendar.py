@@ -19,7 +19,8 @@ __doc__ = """
 dancalendar.py {version} --- generate comprehensive calendars for Denmark
 
 Usage:
-  {filename} [-y <year>] [--moon] [--sun] [--week] [--time] [--all] [-v ...]
+  {filename} [-y <year>] [--moon] [--sun] [--week] [--time] [--all]
+             [--outformat <name>] [-v ...]
   {filename} (-h | --help)
   {filename} --version
 
@@ -30,6 +31,7 @@ Options:
   -w, --week              Inlcude week numbers on Mondays. [Default: False].
   -t, --time              Include time of events. [Default: False].
   -a, --all               Include all extra information. [Default: False].
+  -o, --outformat <name>  Output format (symbols, text). [Default: symbols].
   -h, --help              Show this screen.
   --version               Show version.
   -v                      Print info (-vv for debug info (debug)).
@@ -95,15 +97,15 @@ def bright_nights(year, city='Copenhagen'):
 
 class MoonPhases:
     """Moon phase date times"""
-    def moon_phase_names(self, moon_phase, nametype=None):
-        if nametype == 'danish':
-            danish_names = {'new_moon': 'Nymåne',
+    def moon_phase_names(self, moon_phase, outformat=None):
+        if outformat == 'text':
+            text_names = {'new_moon': 'Nymåne',
                             'first_quarter': 'Første kvarter',
                             'full_moon': 'Fuldmåne',
                             'last_quarter': 'Sidste kvarter'
                             }
-            return danish_names[moon_phase]
-        if nametype == 'unicode':
+            return text_names[moon_phase]
+        elif outformat == 'symbols':
             symbols = {'new_moon': '🌑',
                        'first_quarter': '🌓',
                        'full_moon': '🌕',
@@ -112,7 +114,7 @@ class MoonPhases:
             return symbols[moon_phase]
 
     def __init__(self, year, timezone='Europe/Copenhagen',
-                 nametype='danish'):
+                 outformat='text'):
         """Compute moon phases for a whole year"""
         # Backtrack and look ahead to be sure to catch moons around newyear
         start_date = ephem.Date((year-1, 9, 1))
@@ -129,16 +131,16 @@ class MoonPhases:
             local_last_quarter = utc2localtime(last_quarter.datetime())
             if local_new_moon.year == year:
                 self.moon_phases[local_new_moon] = \
-                                    self.moon_phase_names('new_moon', nametype)
+                                    self.moon_phase_names('new_moon', outformat)
             if local_first_quarter.year == year:
                 self.moon_phases[local_first_quarter] = \
-                               self.moon_phase_names('first_quarter', nametype)
+                               self.moon_phase_names('first_quarter', outformat)
             if local_full_moon.year == year:
                 self.moon_phases[local_full_moon] = \
-                                   self.moon_phase_names('full_moon', nametype)
+                                   self.moon_phase_names('full_moon', outformat)
             if local_last_quarter.year == year:
                 self.moon_phases[local_last_quarter] = \
-                                self.moon_phase_names('last_quarter', nametype)
+                                self.moon_phase_names('last_quarter', outformat)
 
             new_moon = ephem.next_new_moon(new_moon)
             first_quarter = ephem.next_first_quarter_moon(first_quarter)
@@ -191,7 +193,7 @@ class ExtendedDenmark(holidays.Denmark):
 
         if args['--moon']:
             # Moon phases
-            moon_phases = MoonPhases(year, nametype='unicode')
+            moon_phases = MoonPhases(year, outformat=args['--outformat'])
             for key in sorted(moon_phases.moon_phases):
                 self[key] = moon_phases.moon_phases[key]
 
