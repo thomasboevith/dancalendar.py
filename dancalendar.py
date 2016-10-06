@@ -25,7 +25,7 @@ Usage:
   {filename} --version
 
 Options:
-  -y, --year <year>       Calendar year. (default: current year).
+  -y, --year <year>       Calendar year(s). (year, year1-year2, year1,year2,year3) (default: current year).
   -m, --moon              Include moon phases. [Default: False].
   -s, --sun               Include sun rise and sun set. [Default: False].
   -w, --week              Inlcude week numbers on Mondays. [Default: False].
