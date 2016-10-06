@@ -4,7 +4,7 @@ import ephem
 from dateutil.relativedelta import relativedelta as rd
 from dateutil.relativedelta import MO, TU, WE, TH, FR, SA, SU
 from dateutil.easter import easter
-from datetime import date, datetime
+import datetime
 import docopt
 import holidays
 import logging
@@ -13,7 +13,7 @@ import pytz
 import sys
 import time
 
-version = '0.1'
+version = '0.2'
 
 __doc__ = """
 dancalendar.py {version} --- generate comprehensive calendars for Denmark
@@ -31,14 +31,14 @@ Options:
   -w, --week              Inlcude week numbers on Mondays. [Default: False].
   -t, --time              Include time of events. [Default: False].
   -a, --all               Include all extra information. [Default: False].
-  -o, --outformat <name>  Output format (symbols, text). [Default: symbols].
+  -o, --outformat <name>  Output format (symbols, text). [Default: text].
   -h, --help              Show this screen.
   --version               Show version.
   -v                      Print info (-vv for debug info (debug)).
 
 Examples:
   {filename}
-  {filename} -m -y 1975
+  {filename} -a -y 1975
 
 Copyright (C) 2016 Thomas Boevith
 
@@ -52,11 +52,11 @@ def utc2localtime(utc_datetime, timezone='Europe/Copenhagen',
                   format='datetime'):
     """Convert UTC datetime to local timezone datetime"""
     tz = pytz.timezone(timezone)
-    utc_dt = datetime(utc_datetime.year, utc_datetime.month,
-                      utc_datetime.day, utc_datetime.hour,
-                      utc_datetime.minute, utc_datetime.second,
-                      utc_datetime.microsecond,
-                      tzinfo=pytz.utc)
+    utc_dt = datetime.datetime(utc_datetime.year, utc_datetime.month,
+                               utc_datetime.day, utc_datetime.hour,
+                               utc_datetime.minute, utc_datetime.second,
+                               utc_datetime.microsecond,
+                               tzinfo=pytz.utc)
     if format == 'datetime':
         return(utc_dt.astimezone(tz))
     elif format == 'hhmm':
@@ -100,10 +100,10 @@ class MoonPhases:
     def moon_phase_names(self, moon_phase, outformat=None):
         if outformat == 'text':
             text_names = {'new_moon': 'Nymåne',
-                            'first_quarter': 'Første kvarter',
-                            'full_moon': 'Fuldmåne',
-                            'last_quarter': 'Sidste kvarter'
-                            }
+                          'first_quarter': 'Første kvarter',
+                          'full_moon': 'Fuldmåne',
+                          'last_quarter': 'Sidste kvarter'
+                          }
             return text_names[moon_phase]
         elif outformat == 'symbols':
             symbols = {'new_moon': '🌑',
@@ -131,16 +131,16 @@ class MoonPhases:
             local_last_quarter = utc2localtime(last_quarter.datetime())
             if local_new_moon.year == year:
                 self.moon_phases[local_new_moon] = \
-                                    self.moon_phase_names('new_moon', outformat)
+                    self.moon_phase_names('new_moon', outformat)
             if local_first_quarter.year == year:
                 self.moon_phases[local_first_quarter] = \
-                               self.moon_phase_names('first_quarter', outformat)
+                    self.moon_phase_names('first_quarter', outformat)
             if local_full_moon.year == year:
                 self.moon_phases[local_full_moon] = \
-                                   self.moon_phase_names('full_moon', outformat)
+                    self.moon_phase_names('full_moon', outformat)
             if local_last_quarter.year == year:
                 self.moon_phases[local_last_quarter] = \
-                                self.moon_phase_names('last_quarter', outformat)
+                    self.moon_phase_names('last_quarter', outformat)
 
             new_moon = ephem.next_new_moon(new_moon)
             first_quarter = ephem.next_first_quarter_moon(first_quarter)
@@ -153,7 +153,9 @@ class MoonPhases:
 
 class SunRiseSunSet:
     """Sun rise and sun set datetimes for every week"""
-    def __init__(self, year, observer):
+    def __init__(self, year, observer, sun=False, week=False):
+        self.sun = sun
+        self.week = week
         self.sun_rise_sun_set = {}
         start = ephem.Date((year, 1, 1, 0))
         for i in range(367):
@@ -164,38 +166,42 @@ class SunRiseSunSet:
                 sunset = observer.next_setting(ephem.Sun())
                 weeknumber = d.datetime().strftime("%U")
                 if d.datetime().year == year:
-                    if args['--week'] and args['--sun']:
+                    if self.week and self.sun:
                         self.sun_rise_sun_set[d.datetime()] \
                             = 'Uge %s, sol %s-%s' % (weeknumber,
                               utc2localtime(sunrise.datetime(), format='hhmm'),
                                utc2localtime(sunset.datetime(), format='hhmm'))
-                    elif args['--week'] and not args['--sun']:
+                    elif self.week and not self.sun:
                         self.sun_rise_sun_set[d.datetime()] = 'Uge %s' \
                                                               % (weeknumber)
-                    elif not args['--week'] and args['--sun']:
+                    elif not self.week and self.sun:
                         self.sun_rise_sun_set[d.datetime()] = 'Sol %s-%s' \
-                            % (utc2localtime(sunrise.datetime(), format='hhmm'),
+                           % (utc2localtime(sunrise.datetime(), format='hhmm'),
                                utc2localtime(sunset.datetime(), format='hhmm'))
 
 
-class ExtendedDenmark(holidays.Denmark):
+def extended_denmark(years=False, sun=False, moon=False, week=False,
+                     time=False, outformat='text'):
     """Extends the official public holidays of Denmark"""
-    def _populate(self, year):
-        # Populate the holiday list with the default DK holidays
-        holidays.Denmark._populate(self, year)
 
-        if args['--sun'] or args['--week']:
+    # Populate the holiday list with the default DK holidays
+    holidays_dk = holidays.Denmark(years=years)
+
+    # Extend with other dates
+    for year in years:
+        if sun or week:
             # Sun rise and sunsets
             cph = ephem.city('Copenhagen')
             sun_rise_sun_set = SunRiseSunSet(year, cph)
             for key in sorted(sun_rise_sun_set.sun_rise_sun_set):
-                self[key] = sun_rise_sun_set.sun_rise_sun_set[key]
+                holidays_dk.append({key:
+                                       sun_rise_sun_set.sun_rise_sun_set[key]})
 
-        if args['--moon']:
+        if moon:
             # Moon phases
-            moon_phases = MoonPhases(year, outformat=args['--outformat'])
+            moon_phases = MoonPhases(year, outformat=outformat)
             for key in sorted(moon_phases.moon_phases):
-                self[key] = moon_phases.moon_phases[key]
+                holidays_dk.append({key: moon_phases.moon_phases[key]})
 
         # Equinoxes and solstices
         spring_equinox = ephem.next_equinox(str(year))
@@ -204,52 +210,60 @@ class ExtendedDenmark(holidays.Denmark):
         winter_solstice = ephem.next_solstice(fall_equinox)
         # Bright nights, nights when sun is not under 18 deg below horizon
         brightnights = bright_nights(year)
-        self[brightnights[0]] = 'Lyse nætter begynder'
-        self[brightnights[1]] = 'Lyse nætter slutter'
+        holidays_dk.append({brightnights[0]: 'Lyse nætter begynder'})
+        holidays_dk.append({brightnights[1]: 'Lyse nætter slutter'})
 
-        if args['--time']:
-            self[utc2localtime(spring_equinox.datetime())] \
-                = 'Forårsjævndøgn %s' % utc2localtime(spring_equinox.datetime(),
-                                                      format='hhmm')
-            self[utc2localtime(summer_solstice.datetime())] \
-               = 'Sommersolhverv %s' % utc2localtime(summer_solstice.datetime(),
-                                                      format='hhmm')
-            self[utc2localtime(fall_equinox.datetime())] \
-                = 'Efterårsjævndøgn %s' % utc2localtime(fall_equinox.datetime(),
-                                                        format='hhmm')
-            self[utc2localtime(winter_solstice.datetime())] \
-               = 'Vintersolhverv %s' % utc2localtime(winter_solstice.datetime(),
-                                                      format='hhmm')
+        if time:
+            holidays_dk.append({utc2localtime(spring_equinox.datetime()):
+                           'Forårsjævndøgn %s' %
+                       utc2localtime(spring_equinox.datetime(),
+                                     format='hhmm')})
+            holidays_dk.append({utc2localtime(summer_solstice.datetime()):
+                           'Sommersolhverv %s' %
+                       utc2localtime(summer_solstice.datetime(),
+                                     format='hhmm')})
+            holidays_dk.append({utc2localtime(fall_equinox.datetime()):
+                           'Efterårsjævndøgn %s' %
+                       utc2localtime(fall_equinox.datetime(),
+                                     format='hhmm')})
+            holidays_dk.append({utc2localtime(winter_solstice.datetime()):
+                           'Vintersolhverv %s' %
+                       utc2localtime(winter_solstice.datetime(),
+                                     format='hhmm')})
         else:
-            self[utc2localtime(spring_equinox.datetime())] = 'Forårsjævndøgn'
-            self[utc2localtime(summer_solstice.datetime())] = 'Sommersolhverv'
-            self[utc2localtime(fall_equinox.datetime())] = 'Efterårsjævndøgn'
-            self[utc2localtime(winter_solstice.datetime())] = 'Vintersolhverv'
+            holidays_dk.append({utc2localtime(spring_equinox.datetime()): 'Forårsjævndøgn'})
+            holidays_dk.append({utc2localtime(summer_solstice.datetime()): 'Sommersolhverv'})
+            holidays_dk.append({utc2localtime(fall_equinox.datetime()): 'Efterårsjævndøgn'})
+            holidays_dk.append({utc2localtime(winter_solstice.datetime()): 'Vintersolhverv'})
 
         # Add other Danish holidays and events
-        self[date(year, 1, 6)] = 'Helligtrekonger'
-        self[date(year, 2, 14)] = 'Valentinsdag'
-        self[date(year, 3, 8)] = 'Kvindernes internationale kampdag'
-        self[easter(year) + rd(weekday=SU(-8))] = 'Fastelavn'
-        self[easter(year) + rd(weekday=SU(-2))] = 'Palmesøndag'
-        self[date(year, 4, 1) + rd(weekday=SU(-1))] = 'Sommertid begynder'
-        self[date(year, 5, 1) + rd(weekday=SU(+2))] = 'Mors dag'
-        self[date(year, 5, 1)] = 'Arbejdernes internationale kampdag'
-        self[date(year, 5, 23)] = 'Sankthansaften'
-        self[date(year, 5, 24)] = 'Sankthansdag'
-        self[date(year, 5, 4)] = 'Danmarks befrielsesaften'
-        self[date(year, 5, 5)] = 'Danmarks befrielse'
-        self[date(year, 6, 5)] = 'Fars dag'
-        self[date(year, 6, 5)] = 'Grundlovsdag'
-        self[date(year, 10, 31)] = 'Mortensaften'
-        self[date(year, 11, 11)] = 'Mortensdag'
-        self[date(year, 11, 1) + rd(weekday=SU(-1))] = 'Sommertid slutter'
-        self[date(year, 12, 13)] = 'Sankta Lucia'
+        holidays_dk.append({datetime.date(year, 1, 6): 'Helligtrekonger'})
+        holidays_dk.append({datetime.date(year, 2, 14): 'Valentinsdag'})
+        holidays_dk.append({datetime.date(year, 3, 8): 'Kvindernes internationale kampdag'})
+        holidays_dk.append({easter(year) + rd(weekday=SU(-8)): 'Fastelavn'})
+        holidays_dk.append({easter(year) + rd(weekday=SU(-2)): 'Palmesøndag'})
+        holidays_dk.append({datetime.date(year, 4, 1) + rd(weekday=SU(-1)): 'Sommertid begynder'})
+        holidays_dk.append({datetime.date(year, 5, 1) + rd(weekday=SU(+2)): 'Mors dag'})
+        holidays_dk.append({datetime.date(year, 5, 1): 'Arbejdernes internationale kampdag'})
+        holidays_dk.append({datetime.date(year, 5, 23): 'Sankthansaften'})
+        holidays_dk.append({datetime.date(year, 5, 24): 'Sankthansdag'})
+        holidays_dk.append({datetime.date(year, 5, 4): 'Danmarks befrielsesaften'})
+        holidays_dk.append({datetime.date(year, 5, 5): 'Danmarks befrielse'})
+        holidays_dk.append({datetime.date(year, 6, 5): 'Fars dag'})
+        holidays_dk.append({datetime.date(year, 6, 5): 'Grundlovsdag'})
+        holidays_dk.append({datetime.date(year, 10, 31): 'Mortensaften'})
+        holidays_dk.append({datetime.date(year, 11, 11): 'Mortensdag'})
+        holidays_dk.append({datetime.date(year, 11, 1) + rd(weekday=SU(-1)): 'Sommertid slutter'})
+        holidays_dk.append({datetime.date(year, 12, 13): 'Sankta Lucia'})
         for i in range(4):
-            self[date(year, 12, 24) + rd(weekday=SU(-(i+1)))] \
-                = '%s. søndag i advent' % abs(4-i)
-        self[date(year, 12, 24)] = 'Juleaftensdag'
-        self[date(year, 12, 31)] = 'Nytårsaftensdag'
+            holidays_dk.append({datetime.date(year, 12, 24) +
+                                rd(weekday=SU(-(i+1))):
+                                    '%s. søndag i advent' % abs(4-i)})
+
+        holidays_dk.append({datetime.date(year, 12, 24): 'Juleaftensdag'})
+        holidays_dk.append({datetime.date(year, 12, 31): 'Nytårsaftensdag'})
+
+    return holidays_dk
 
 if __name__ == '__main__':
     start_time = time.time()
@@ -267,21 +281,32 @@ if __name__ == '__main__':
     log.debug('%s started' % os.path.basename(__file__))
     log.debug('docopt args=%s' % str(args).replace('\n', ''))
 
+    # Parse years
     if args['--year'] is None:
-        year = datetime.now().year
+        years = [datetime.datetime.now().year]
+    elif '-' in args['--year']:
+        yearlist = map(int, args['--year'].strip().split('-'))
+        years = range(yearlist[0], yearlist[1]+1)
+    elif ',' in args['--year']:
+        years = map(int, args['--year'].strip().split(','))
     else:
-        year = int(args['--year'])
+        years = int(args['--year'])
 
     if args['--all']:
         args['--moon'] = args['--sun'] = args['--week'] = args['--time'] = True
 
-    if (year < 1) or (year > 9999):
-        message = 'Specify specify year between year 1 and 9999'
-        log.debug(message)
-        print(message)
-        sys.exit(1)
+    for year in years:
+        if (year < 1) or (year > 9999):
+            message = 'Specify specify years between year 1 and 9999'
+            log.debug(message)
+            print(message)
+            sys.exit(1)
 
-    dk_holidays = ExtendedDenmark(years=year)
+    dk_holidays = extended_denmark(years=years, sun=args['--sun'],
+                                   week=args['--week'], moon=args['--moon'],
+                                   time=args['--time'],
+                                   outformat=args['--outformat'])
+
     for date, name in sorted(dk_holidays.items()):
         print('%s %s' % (date, name))
 
