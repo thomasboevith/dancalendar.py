@@ -35,9 +35,10 @@ Included are precisely computed astronomical events.
 
 ## Example:
 
-    >./dancalendar.py
+    ./dancalendar.py
     2016-01-01 Nytårsdag
     2016-01-06 Helligtrekonger
+    2016-02-02 Kyndelmisse
     2016-02-07 Fastelavn
     2016-02-14 Valentinsdag
     2016-03-08 Kvindernes internationale kampdag
@@ -46,21 +47,26 @@ Included are precisely computed astronomical events.
     2016-03-25 Langfredag
     2016-03-27 Sommertid begynder, Påskedag
     2016-03-28 Anden påskedag
+    2016-04-09 Danmarks besættelse (1940)
     2016-04-22 Store bededag
     2016-05-01 Arbejdernes internationale kampdag
     2016-05-04 Danmarks befrielsesaften
-    2016-05-05 Danmarks befrielse, Lyse nætter begynder, Kristi himmelfartsdag
+    2016-05-05 Danmarks befrielse (1945), Lyse nætter begynder, Kristi himmelfartsdag
     2016-05-08 Mors dag
+    2016-05-09 Europadag
     2016-05-15 Pinsedag
     2016-05-16 Anden pinsedag
-    2016-05-23 Sankthansaften
-    2016-05-24 Sankthansdag
     2016-06-05 Grundlovsdag, Fars dag
+    2016-06-15 Valdemarsdag
     2016-06-21 Sommersolhverv
+    2016-06-23 Sankthansaften
+    2016-06-24 Sankthansdag
     2016-08-07 Lyse nætter slutter
     2016-09-22 Efterårsjævndøgn
     2016-10-30 Sommertid slutter
-    2016-10-31 Mortensaften
+    2016-10-31 Halloween
+    2016-11-06 Allehelgensdag
+    2016-11-10 Mortensaften
     2016-11-11 Mortensdag
     2016-11-27 1. søndag i advent
     2016-12-04 2. søndag i advent
