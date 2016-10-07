@@ -175,7 +175,7 @@ class SunRiseSunSet:
                         self.sun_rise_sun_set[d.datetime()] = 'Uge %s' \
                                                               % (weeknumber)
                     elif not self.week and self.sun:
-                        self.sun_rise_sun_set[d.datetime()] = 'Sol %s-%s' \
+                        self.sun_rise_sun_set[d.datetime()] = 'Sol: %s-%s' \
                            % (utc2localtime(sunrise.datetime(), format='hhmm'),
                                utc2localtime(sunset.datetime(), format='hhmm'))
 
@@ -192,7 +192,7 @@ def extended_denmark(years=False, sun=False, moon=False, week=False,
         if sun or week:
             # Sun rise and sunsets
             cph = ephem.city('Copenhagen')
-            sun_rise_sun_set = SunRiseSunSet(year, cph)
+            sun_rise_sun_set = SunRiseSunSet(year, cph, sun=sun, week=week)
             for key in sorted(sun_rise_sun_set.sun_rise_sun_set):
                 holidays_dk.append({key:
                                        sun_rise_sun_set.sun_rise_sun_set[key]})
