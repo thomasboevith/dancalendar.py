@@ -153,31 +153,33 @@ class MoonPhases:
 
 class SunRiseSunSet:
     """Sun rise and sun set datetimes for every week"""
-    def __init__(self, year, observer, sun=False, week=False):
-        self.sun = sun
-        self.week = week
+    def __init__(self, year, observer=ephem.city('Copenhagen'), weekly=True,
+                 on_days=range(7)):
         self.sun_rise_sun_set = {}
         start = ephem.Date((year, 1, 1, 0))
         for i in range(367):
             d = ephem.date(start + (24*ephem.hour*i))
-            if d.datetime().weekday() == 0:  # If monday
+            if weekly:
+                on_days = [0]
+            if (d.datetime().weekday() in on_days):
                 observer.date = d
                 sunrise = observer.next_rising(ephem.Sun())
                 sunset = observer.next_setting(ephem.Sun())
-                weeknumber = d.datetime().strftime("%U")
                 if d.datetime().year == year:
-                    if self.week and self.sun:
-                        self.sun_rise_sun_set[d.datetime()] \
-                            = 'Uge %s, sol %s-%s' % (weeknumber,
-                              utc2localtime(sunrise.datetime(), format='hhmm'),
-                               utc2localtime(sunset.datetime(), format='hhmm'))
-                    elif self.week and not self.sun:
-                        self.sun_rise_sun_set[d.datetime()] = 'Uge %s' \
-                                                              % (weeknumber)
-                    elif not self.week and self.sun:
-                        self.sun_rise_sun_set[d.datetime()] = 'Sol: %s-%s' \
+                        self.sun_rise_sun_set[d.datetime()] = 'sol: %s-%s' \
                            % (utc2localtime(sunrise.datetime(), format='hhmm'),
                                utc2localtime(sunset.datetime(), format='hhmm'))
+
+
+class WeekNumber:
+    """Week numbers for each week of year"""
+    def __init__(self, year, weekstart=0):  # Week start (0==Monday, 6==Sunday)
+        d = datetime.date(year, 1, 1)
+        self.weeknumbers = {}
+        for i in range(367):
+            d = d + datetime.timedelta(days=1)
+            if d.weekday() == weekstart:
+                self.weeknumbers[d] = 'uge %s' % d.strftime("%U")
 
 
 def extended_denmark(years=False, sun=False, moon=False, week=False,
@@ -189,16 +191,18 @@ def extended_denmark(years=False, sun=False, moon=False, week=False,
 
     # Extend with other dates
     for year in years:
-        if sun or week:
-            # Sun rise and sunsets
-            cph = ephem.city('Copenhagen')
-            sun_rise_sun_set = SunRiseSunSet(year, cph, sun=sun, week=week)
+        if week:
+            weeknumbers = WeekNumber(year)
+            for key in weeknumbers.weeknumbers:
+                holidays_dk.append({key: weeknumbers.weeknumbers[key]})
+
+        if sun:
+            sun_rise_sun_set = SunRiseSunSet(year)
             for key in sorted(sun_rise_sun_set.sun_rise_sun_set):
                 holidays_dk.append({key:
                                        sun_rise_sun_set.sun_rise_sun_set[key]})
 
         if moon:
-            # Moon phases
             moon_phases = MoonPhases(year, outformat=outformat)
             for key in sorted(moon_phases.moon_phases):
                 holidays_dk.append({key: moon_phases.moon_phases[key]})
@@ -296,7 +300,7 @@ if __name__ == '__main__':
     elif ',' in args['--year']:
         years = map(int, args['--year'].strip().split(','))
     else:
-        years = int(args['--year'])
+        years = [int(args['--year'])]
 
     if args['--all']:
         args['--moon'] = args['--sun'] = args['--week'] = args['--time'] = True
