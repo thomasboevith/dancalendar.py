@@ -166,7 +166,7 @@ class SunRiseSunSet:
                 sunrise = observer.next_rising(ephem.Sun())
                 sunset = observer.next_setting(ephem.Sun())
                 if d.datetime().year == year:
-                        self.sun_rise_sun_set[d.datetime()] = 'sol: %s-%s' \
+                        self.sun_rise_sun_set[d.datetime()] = 'sol %s-%s' \
                            % (utc2localtime(sunrise.datetime(), format='hhmm'),
                                utc2localtime(sunset.datetime(), format='hhmm'))
 
