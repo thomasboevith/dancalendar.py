@@ -248,7 +248,7 @@ def extended_denmark(years=False, sun=False, moon=False, week=False,
         holidays_dk.append({easter(year) + rd(weekday=SU(-8)): 'Fastelavn'})
         holidays_dk.append({easter(year) + rd(weekday=SU(-2)): 'Palmesøndag'})
         holidays_dk.append({datetime.date(year, 4, 9): 'Danmarks besættelse (1940)'})
-        holidays_dk.append({datetime.date(year, 4, 1) + rd(weekday=SU(-1)): 'Sommertid begynder'})
+        holidays_dk.append({datetime.date(year, 3, 31) + rd(weekday=SU(-1)): 'Sommertid begynder'}) # Last sunday in March
         holidays_dk.append({datetime.date(year, 5, 1) + rd(weekday=SU(+2)): 'Mors dag'})
         holidays_dk.append({datetime.date(year, 5, 1): 'Arbejdernes internationale kampdag'})
         holidays_dk.append({datetime.date(year, 5, 9): 'Europadag'})
@@ -263,7 +263,7 @@ def extended_denmark(years=False, sun=False, moon=False, week=False,
         holidays_dk.append({datetime.date(year, 11, 10): 'Mortensaften'})
         holidays_dk.append({datetime.date(year, 11, 11): 'Mortensdag'})
         holidays_dk.append({datetime.date(year, 11, 1) + rd(weekday=SU(+1)): 'Allehelgensdag'})
-        holidays_dk.append({datetime.date(year, 11, 1) + rd(weekday=SU(-1)): 'Sommertid slutter'})
+        holidays_dk.append({datetime.date(year, 10, 31) + rd(weekday=SU(-1)): 'Sommertid slutter'}) # Last sunday in October
         holidays_dk.append({datetime.date(year, 12, 13): 'Sankta Lucia'})
         for i in range(4):
             holidays_dk.append({datetime.date(year, 12, 24) +
