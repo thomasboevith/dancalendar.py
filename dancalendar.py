@@ -42,7 +42,7 @@ Examples:
   {filename}
   {filename} -a -y 1975
 
-Copyright (C) 2016 Thomas Boevith
+Copyright (C) 2020 Thomas Boevith
 
 License: GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
 This is free software: you are free to change and redistribute it. There is NO
