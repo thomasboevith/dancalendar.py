@@ -7,20 +7,21 @@ from dateutil.easter import easter
 import datetime
 import docopt
 import holidays
+from icalendar import Calendar, Event
 import logging
 import os
 import pytz
 import sys
 import time
 
-version = '0.2'
+version = '0.3'
 
 __doc__ = """
 dancalendar.py {version} --- generate comprehensive calendars for Denmark
 
 Usage:
   {filename} [-y <year>] [--moon] [--sun] [--week] [--time] [--all]
-             [--outformat <name>] [-v ...]
+             [--outformat <name>] [--outfile <name>] [-v ...]
   {filename} (-h | --help)
   {filename} --version
 
@@ -32,6 +33,7 @@ Options:
   -t, --time              Include time of events. [Default: False].
   -a, --all               Include all extra information. [Default: False].
   -o, --outformat <name>  Output format (symbols, text). [Default: text].
+  -O, --outfile <name>    Write calendar to file in ical format.
   -h, --help              Show this screen.
   --version               Show version.
   -v                      Print info (-vv for debug info (debug)).
@@ -154,7 +156,7 @@ class MoonPhases:
 class SunRiseSunSet:
     """Sun rise and sun set datetimes for every week"""
     def __init__(self, year, observer=ephem.city('Copenhagen'), weekly=True,
-                 on_days=range(7)):
+                 on_days=range(7), outformat=None):
         self.sun_rise_sun_set = {}
         start = ephem.Date((year, 1, 1, 0))
         for i in range(367):
@@ -166,10 +168,14 @@ class SunRiseSunSet:
                 sunrise = observer.next_rising(ephem.Sun())
                 sunset = observer.next_setting(ephem.Sun())
                 if d.datetime().year == year:
+                    if outformat == 'text':
                         self.sun_rise_sun_set[d.datetime()] = 'sol %s-%s' \
-                           % (utc2localtime(sunrise.datetime(), format='hhmm'),
-                               utc2localtime(sunset.datetime(), format='hhmm'))
-
+                                                              % (utc2localtime(sunrise.datetime(), format='hhmm'),
+                                                                 utc2localtime(sunset.datetime(), format='hhmm'))
+                    elif  outformat == 'symbols':
+                        self.sun_rise_sun_set[d.datetime()] = '🌞 %s-%s' \
+                                                              % (utc2localtime(sunrise.datetime(), format='hhmm'),
+                                                                 utc2localtime(sunset.datetime(), format='hhmm'))
 
 class WeekNumber:
     """Week numbers for each week of year"""
@@ -197,7 +203,7 @@ def extended_denmark(years=False, sun=False, moon=False, week=False,
                 holidays_dk.append({key: weeknumbers.weeknumbers[key]})
 
         if sun:
-            sun_rise_sun_set = SunRiseSunSet(year)
+            sun_rise_sun_set = SunRiseSunSet(year, outformat=outformat)
             for key in sorted(sun_rise_sun_set.sun_rise_sun_set):
                 holidays_dk.append({key:
                                        sun_rise_sun_set.sun_rise_sun_set[key]})
@@ -295,12 +301,15 @@ if __name__ == '__main__':
     if args['--year'] is None:
         years = [datetime.datetime.now().year]
     elif '-' in args['--year']:
-        yearlist = map(int, args['--year'].strip().split('-'))
+        yearlist = list(map(int, args['--year'].strip().split('-')))
+        print(yearlist)
         years = range(yearlist[0], yearlist[1]+1)
     elif ',' in args['--year']:
-        years = map(int, args['--year'].strip().split(','))
+        years = list(map(int, args['--year'].strip().split(',')))
     else:
         years = [int(args['--year'])]
+
+    log.debug('years: %s', years)
 
     if args['--all']:
         args['--moon'] = args['--sun'] = args['--week'] = args['--time'] = True
@@ -317,8 +326,27 @@ if __name__ == '__main__':
                                    time=args['--time'],
                                    outformat=args['--outformat'])
 
-    for date, name in sorted(dk_holidays.items()):
-        print('%s %s' % (date, name))
+    if args['--outfile']:
+        cal = Calendar()
+        cal.add('METHOD', 'PUBLISH')
+        cal.add('VERSION', '2.0')
+        cal.add('PRODID', 'Min kalender')
+        cal.add('LNAME', 'Min kalender')
+        for i, (date, name) in enumerate(sorted(dk_holidays.items())):
+            event = Event()
+            event.add('SUMMARY', name)
+            event.add('DTSTART', date)
+            event.add('DURATION', datetime.timedelta(days=1))
+            event.add('UID', '%s-%s' % (i, date.strftime("%Y%m%d")))
+            cal.add_component(event)
+
+        f = open(args['--outfile'], 'wb')
+        f.write(cal.to_ical())
+        f.close()
+
+    else:
+        for date, name in sorted(dk_holidays.items()):
+            print('%s %s' % (date, name))
 
     log.debug('Processing time={0:.2f} s'.format(time.time() - start_time))
     log.debug('%s ended' % os.path.basename(__file__))
