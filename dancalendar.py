@@ -273,7 +273,7 @@ def extended_denmark(years=False, sun=False, moon=False, week=False,
         holidays_dk.append({datetime.date(year, 11, 11): 'Mortensdag'})
         holidays_dk.append({datetime.date(year, 11, 1) + rd(weekday=SU(+1)): 'Allehelgensdag'})
         holidays_dk.append({datetime.date(year, 10, 31) + rd(weekday=SU(-1)): 'Sommertid slutter'}) # Last sunday in October
-        holidays_dk.append({datetime.date(year, 12, 13): 'Sankta Lucia'})
+        holidays_dk.append({datetime.date(year, 12, 13): 'Luciadag'})
         for i in range(4):
             holidays_dk.append({datetime.date(year, 12, 24) +
                                 rd(weekday=SU(-(i+1))):
